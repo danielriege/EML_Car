@@ -30,3 +30,21 @@ class RCReceiver:
             except ValueError:
                 continue
         return result
+        
+if __name__ == '__main__':
+    test_receiver = RCReceiver(port="/dev/ttyUSB0", baudrate=115200, validRange=range(0,20000))
+    print("opening serial port...")
+    if test_receiver.startListening():
+        print("serial port is open and listening started")
+    else:
+        print("serial port opening failed")
+        exit()
+    try:
+        while True:
+            data = test_receiver.read()
+            print(data)
+    except KeyboardInterrupt:
+        if test_receiver.stopListening():
+            print("serial port closed sucessfully.")
+        else:
+            print("serial port closing failed!")
