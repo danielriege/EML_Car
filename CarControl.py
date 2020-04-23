@@ -3,7 +3,7 @@ import time
 
 # throttle_zero might also be configured on the ESC
 class CarControl:
-    def __init__(self, steering_zero, steering_trim = 0, throttle_zero, throttle_trim = 0, pwm_frequency = 50, steering_pin, throttle_pin):
+    def __init__(self, steering_zero, throttle_zero, steering_pin, throttle_pin, steering_trim = 0, throttle_trim = 0, pwm_frequency = 50):
         self.steering_value = steering_zero
         self.throttle_value = throttle_zero
         self.steering_trim = steering_trim
@@ -21,21 +21,22 @@ class CarControl:
     def __del__(self):
         self.stop()
         GPIO.cleanup()
-        print('CarControl deleted')
     def start(self):
-        self.steering.start(self.__relativePWM(self.steering_value))
-        self.throttle.start(self.__relativePWM(self.throttle_value))
+        self.steering.start(self.__relativePWM(self.steering_value) + self.steering_trim)
+        self.throttle.start(self.__relativePWM(self.throttle_value) + self.throttle_trim)
     def stop(self):
         self.steering.stop()
         self.throttle.stop()
     # angle as PWM %
     def steer(self, angle):
-        if self.steering_value = self.__relativePWM(angle) > 0:
+        self.steering_value = self.__relativePWM(angle)
+        if 5.0 <= self.steering_value <= 10.0:
             self.steering_value += self.steering_trim
-        self.steering.ChangeDutyCycle(self.steering_value)
+            self.steering.ChangeDutyCycle(self.steering_value)
     def accelerate(self, throttle):
-        if self.throttle_value = self.__relativePWM(throttle) > 0:
+        self.throttle_value = self.__relativePWM(throttle)
+        if 5.0 <= self.throttle_value <= 10.0:
             self.throttle_value += self.throttle_trim
-        self.throttle.ChangeDutyCycle(self.throttle_value)
+            self.throttle.ChangeDutyCycle(self.throttle_value)
     def __relativePWM(self, pwm_value):
         return pwm_value*self.pwm_frequency/10000.0

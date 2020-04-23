@@ -6,7 +6,7 @@ CHANNEL_1 = 0
 CHANNEL_2 = 1
 
 # SETUP
-rec = RCReceiver(port="/dev/cu.usbmodem141201", baudrate=115200)
+rec = RCReceiver(port="/dev/ttyUSB0", baudrate=115200)
 ctl = CarControl(steering_zero = 1500,
 steering_trim = -1.9,
 throttle_zero = 1250,
@@ -23,7 +23,7 @@ try:
         data = rec.read()
         print(data)
         ctl.steer(data[CHANNEL_1])
-        ctl.throttle(data[CHANNEL_2])
+        ctl.accelerate(data[CHANNEL_2])
 # TERMINATE
 except KeyboardInterrupt:
     ctl.stop()
