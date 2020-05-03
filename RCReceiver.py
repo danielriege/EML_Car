@@ -1,50 +1,50 @@
 #!/usr/bin/env python3
 import serial as ser
 import time
+import threading
 
 PWM_MASK = 0x7FFF
 CH_MASK = 0x8000
 
 # This class uses an Arduino to precisley measure the pulse length of the Receivers PWM pins.
-class RCReceiver:
+class RCReceiver(threading.Thread):
     def __init__(self, port, baudrate=9600, validRange=range(800,2200)):
+        threading.Thread.__init__(self)
         self.serial = ser.Serial()
         self.serial.port = port
         self.serial.baudrate = baudrate
         self.serial.timeout = 0
         self.validRange = validRange
-    def startListening(self):
-        self.serial.open()
-        return self.serial.is_open
-    def stopListening(self):
+        self.channelData = [0.0, 0.0]
+        self.running = True
+    def getChannelData(self):
+        return self.channelData
+    def stop(self):
+        self.running = False
         self.serial.close()
-        return not self.serial.is_open
-    def read(self, channelData):
-        if(ser.in_waiting >1):
-            try:
-                line = int(ser.readline().decode("utf-8"))
-                ch = (line & CH_MASK) >> 15
-                pwm = line & PWM_MASK
-                if pwm in self.validRange:
-                    channelData[ch] = pwm
-            except ValueError:
-                continue
-
+    def run(self):
+        self.serial.open()
+        while self.running:
+            if(self.serial.in_waiting >1):
+                try:
+                    line = int(self.serial.readline().decode("utf-8"))
+                    ch = (line & CH_MASK) >> 15
+                    pwm = line & PWM_MASK
+                    if pwm in self.validRange:
+                        self.channelData[ch] = pwm
+                except ValueError:
+                    continue
 if __name__ == '__main__':
     test_receiver = RCReceiver(port="/dev/ttyUSB0", baudrate=115200, validRange=range(800,2200))
-    print("opening serial port...")
-    if test_receiver.startListening():
-        print("serial port is open and listening started")
-    else:
-        print("serial port opening failed")
-        exit()
+    print("opening serial port and starting thread...")
+    test_receiver.start()
     try:
-        channelData = [0.0, 0.0]
         while True:
-            test_receiver.read(channelData)
+            channelData = test_receiver.getChannelData()
             print(channelData)
+            time.sleep(0.02)
     except KeyboardInterrupt:
-        if test_receiver.stopListening():
-            print("serial port closed sucessfully.")
-        else:
-            print("serial port closing failed!")
+        print("stopping thread")
+        test_receiver.stop()
+        print("waiting for thread to stop")
+        test_receiver.join()
