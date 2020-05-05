@@ -20,7 +20,7 @@ steering_trim = -1.9,
 throttle_zero = 1250,
 steering_pin = 18,
 throttle_pin = 12)
-camera = Camera("Car front")
+camera = Camera()
 
 test_run_name = "test1"
 prevtime = time.time()
