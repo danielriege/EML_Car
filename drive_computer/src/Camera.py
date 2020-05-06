@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 import time
+import threading
 import cv2
 import sys
 
-class Camera(threading.thread):
+class Camera(threading.Thread):
     def __init__(self, _loop = None, _teardown = None):
         threading.Thread.__init__(self)
         self.loop = _loop
@@ -18,19 +19,21 @@ class Camera(threading.thread):
             i = 0
             while cap.isOpened():
                 _, frame = cap.read()
-                if _loop:
-                    _loop(frame, i)
+                if self.loop:
+                    self.loop(frame, i)
                 i += 1
                 cv2.waitKey(1)
-                if running == False:
+                if self.running == False:
                     break
         finally:
             cap.release()
-            if _teardown:
-                _teardown()
+            if self.teardown:
+                self.teardown()
     def stop(self):
         self.running = False
 if __name__ == "__main__":
+    def teardown():
+        cv2.destroyAllWindows()
     prevtime = 0
     def callback(image, loopRun):
         global prevtime
