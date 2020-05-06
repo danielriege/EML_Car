@@ -13,20 +13,21 @@ from Camera import Camera
 CHANNEL_1 = 0
 CHANNEL_2 = 1
 
-# SETUP
-receiver = RCReceiver(port="/dev/ttyUSB0", baudrate=115200)
-control = CarControl(steering_zero = 1500,
-steering_trim = -1.9,
-throttle_zero = 1250,
-steering_pin = 18,
-throttle_pin = 12)
-camera = Camera()
-
-test_run_name = "test1"
 prevtime = time.time()
 channelData = [0.0, 0.0]
+test_run_name = "test1"
 
-# Helper functions
+# camera will call the loop function every time it gets a picture
+def loop(image, loopRun):
+    global prevtime
+    cv2.imshow("Frame", image)
+    cv2.imwrite("training_data/%s_%04d_%04d_%04d.jpg" % (test_run_name, loopRun, channelData[CHANNEL_1], channelData[CHANNEL_2]), image)
+    print("[Camera] period: ",(time.time()-prevtime)*1000,"ms")
+    prevtime = time.time()
+# camera will call teardown when q is pressed
+def teardown():
+    cv2.destroyAllWindows()
+
 def createVideoFromStream():
     img_array = []
     size = (0,0)
@@ -41,26 +42,35 @@ def createVideoFromStream():
         out.write(img_array[i])
     out.release()
 
+# SETUP
+receiver = RCReceiver(port="/dev/ttyUSB0", baudrate=115200)
+control = CarControl(steering_zero = 1500,
+steering_trim = -1.9,
+throttle_zero = 1250,
+steering_pin = 18,
+throttle_pin = 12)
+camera = Camera(loop, teardown)
+
+# INITIALIZE CAR
+print("[Receiver] starting...")
+receiver.start()
+print("[Receiver] waiting for connection...")
+time.sleep(2)
+print("[Receiver] ready")
+print("[Control] starting...")
+control.start()
+print("[Camera] starting...")
+camera.start()
+print("starting control loop...")
 # LOOP
-# called every 20ms in a sepereate thread
-def controlLoop():
+try:
     while True:
         channelData = receiver.getChannelData()
-        print(channelData)
+        print("[Receiver] ",channelData)
         control.steer(channelData[CHANNEL_1])
         control.accelerate(channelData[CHANNEL_2])
         time.sleep(0.02)
-# camera will call the loop function every time it gets a picture
-def loop(image, loopRun):
-    global prevtime
-    cv2.imshow("Frame", image)
-    cv2.imwrite("training_data/%s_%04d_%04d_%04d.jpg" % (test_run_name, loopRun, channelData[CHANNEL_1], channelData[CHANNEL_2]), image)
-    print((time.time()-prevtime)*1000,"ms")
-    prevtime = time.time()
-# camera will call teardown when q is pressed
-def teardown():
-    print("starting teardown...")
-    cv2.destroyAllWindows()
+except KeyboardInterrupt:
     print("[Control] stopping the car")
     control.stop()
     print("[Receiver] signaling thread to stop")
@@ -68,19 +78,12 @@ def teardown():
     print("[Receiver] waiting for teardown")
     receiver.join()
     print("[Receiver] thread killed sucessfully")
+    print("[Camera] signaling thread to stop")
+    camera.stop()
+    print("[Camera] waiting for teardown")
+    camera.join()
+    print("[Camera] thread killed sucessfully")
     print("All units stopped")
     print("generating video from gathered training data")
     createVideoFromStream()
     print("video is saved as:",test_run_name,".avi")
-
-# INITIALIZE CAR
-print("[Receiver] starting...")
-receiver.start()
-print("[Control] starting...")
-control.start()
-print("starting control loop...")
-control_loop = threading.Thread(target=controlLoop, args=(), daemon=True)
-control_loop.start()
-print("[Camera] starting...")
-print("All units are running. Press 'q' to stop the program")
-camera.start(loop, teardown)
