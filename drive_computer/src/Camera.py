@@ -38,7 +38,6 @@ if __name__ == "__main__":
     def callback(image, loopRun):
         global prevtime
         cv2.imshow("Frame", image)
-        time.sleep(0.02)
         print((time.time()-prevtime)*1000,"ms")
         prevtime = time.time()
     test_camera = Camera(callback)

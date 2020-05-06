@@ -21,7 +21,6 @@ class RCReceiver(threading.Thread):
         return self.channelData
     def stop(self):
         self.running = False
-        self.serial.close()
     def run(self):
         self.serial.open()
         while self.running:
@@ -34,6 +33,7 @@ class RCReceiver(threading.Thread):
                         self.channelData[ch] = pwm
                 except ValueError:
                     continue
+        self.serial.close()
 if __name__ == '__main__':
     test_receiver = RCReceiver(port="/dev/ttyUSB0", baudrate=115200, validRange=range(800,2200))
     print("opening serial port and starting thread...")
