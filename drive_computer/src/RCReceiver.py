@@ -8,7 +8,8 @@ CH_MASK = 0x8000
 
 # This class uses an Arduino to precisley measure the pulse length of the Receivers PWM pins.
 class RCReceiver(threading.Thread):
-    def __init__(self, port, baudrate=9600, validRange=range(800,2200)):
+    def __init__(self, port, baudrate=9600, validRange=range(800,2200),
+                 _callback = None):
         threading.Thread.__init__(self)
         self.serial = ser.Serial()
         self.serial.port = port
@@ -17,6 +18,7 @@ class RCReceiver(threading.Thread):
         self.validRange = validRange
         self.channelData = [0.0, 0.0]
         self.running = True
+        self.callback = _callback
     def getChannelData(self):
         return self.channelData
     def stop(self):
@@ -31,6 +33,8 @@ class RCReceiver(threading.Thread):
                     pwm = line & PWM_MASK
                     if pwm in self.validRange:
                         self.channelData[ch] = pwm
+                        if self.callback:
+                            self.callback(ch, pwm)
                 except ValueError:
                     continue
         self.serial.close()

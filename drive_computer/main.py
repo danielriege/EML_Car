@@ -4,54 +4,69 @@ import time
 import sys
 import cv2
 import glob
+from queue import Queue
+from multiprocessing.dummy import Pool as ThreadPool
 
 from src.RCReceiver import RCReceiver
 from src.CarControl import CarControl
 from src.Camera import Camera
+from src.TrainingDataSaver import TrainingDataSaver
 
 
 CHANNEL_1 = 0
 CHANNEL_2 = 1
 
 prevtime = time.time()
-channelData = [0.0, 0.0]
 test_run_name = "test1"
 
+
 # SETUP
-receiver = RCReceiver(port="/dev/ttyUSB0", baudrate=115200)
+print("[Control] starting...")
 control = CarControl(steering_zero = 1500,
 steering_trim = -1.9,
 throttle_zero = 1250,
 steering_pin = 18,
 throttle_pin = 12)
-camera = Camera()
+control.start()
+print("[Camera] starting...")
+camera = Camera(255)
+camera.start()
 
-# INITIALIZE CAR
+
+# will be called when the receiver has a new value for a channel
+def controlCallback(ch, pwm):
+    if ch == CHANNEL_1:
+        control.steer(pwm)    
+    elif ch == CHANNEL_2:
+        control.accelerate(pwm)
+receiver = RCReceiver(port="/dev/ttyUSB0", baudrate=115200, _callback=controlCallback)
 print("[Receiver] starting...")
 receiver.start()
 print("[Receiver] waiting for connection...")
 time.sleep(2)
 print("[Receiver] ready")
-print("[Control] starting...")
-control.start()
-print("[Camera] starting...")
-camera.start()
+print("starting thread pool...")
+training_data_saver = TrainingDataSaver(threads=7, bufferSize=128, name=test_run_name)
+training_data_saver.start()
 print("starting control loop...")
 # LOOP
 try:
     loopRun = 0
     while True:
         frame = camera.read()
-
         channelData = receiver.getChannelData()
-        print("[Receiver] ",channelData)
-        control.steer(channelData[CHANNEL_1])
-        control.accelerate(channelData[CHANNEL_2])
 
-        cv2.imshow("Frame", image)
-        cv2.imwrite("../training_data/%s_%04d_%04d_%04d.jpg" % (test_run_name, loopRun, channelData[CHANNEL_1], channelData[CHANNEL_2]), image)
+        training_data_saver.add((frame, loopRun, channelData[CHANNEL_1],
+                                 channelData[CHANNEL_2]))
+        cv2.putText(frame, "Frame Buffer: {}".format(camera.Q.qsize()),
+		(10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+        print("[Receiver] ",channelData)
+
+        cv2.imshow("Frame", frame)
+        cv2.waitKey(1)
         # wait until buffer has more frames to process
         while not camera.available():
+            continue
         print("[Camera] period: ",(time.time()-prevtime)*1000,"ms")
         prevtime = time.time()
         loopRun += 1
@@ -65,5 +80,7 @@ except KeyboardInterrupt:
     print("[Receiver] thread killed sucessfully")
     print("[Camera] signaling thread to stop")
     camera.stop()
+    print("[TrainingDataSaver] stopping...")
+    training_data_saver.stop()
     cv2.destroyAllWindows()
     print("All units stopped")
