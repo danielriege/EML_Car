@@ -17,18 +17,6 @@ prevtime = time.time()
 channelData = [0.0, 0.0]
 test_run_name = "test1"
 
-# camera will call the loop function every time it gets a picture
-def loop(image, loopRun):
-    global prevtime
-    cv2.imshow("Frame", image)
-    cv2.imwrite("../training_data/%s_%04d_%04d_%04d.jpg" % (test_run_name, loopRun, channelData[CHANNEL_1], channelData[CHANNEL_2]), image)
-    print("[Camera] period: ",(time.time()-prevtime)*1000,"ms")
-    prevtime = time.time()
-# camera will call teardown when q is pressed
-def teardown():
-    cv2.destroyAllWindows()
-
-
 # SETUP
 receiver = RCReceiver(port="/dev/ttyUSB0", baudrate=115200)
 control = CarControl(steering_zero = 1500,
@@ -36,7 +24,7 @@ steering_trim = -1.9,
 throttle_zero = 1250,
 steering_pin = 18,
 throttle_pin = 12)
-camera = Camera(loop, teardown)
+camera = Camera()
 
 # INITIALIZE CAR
 print("[Receiver] starting...")
@@ -51,12 +39,22 @@ camera.start()
 print("starting control loop...")
 # LOOP
 try:
+    loopRun = 0
     while True:
+        frame = camera.read()
+
         channelData = receiver.getChannelData()
         print("[Receiver] ",channelData)
         control.steer(channelData[CHANNEL_1])
         control.accelerate(channelData[CHANNEL_2])
-        time.sleep(0.02)
+
+        cv2.imshow("Frame", image)
+        cv2.imwrite("../training_data/%s_%04d_%04d_%04d.jpg" % (test_run_name, loopRun, channelData[CHANNEL_1], channelData[CHANNEL_2]), image)
+        # wait until buffer has more frames to process
+        while not camera.available():
+        print("[Camera] period: ",(time.time()-prevtime)*1000,"ms")
+        prevtime = time.time()
+        loopRun += 1
 except KeyboardInterrupt:
     print("[Control] stopping the car")
     control.stop()
@@ -67,7 +65,5 @@ except KeyboardInterrupt:
     print("[Receiver] thread killed sucessfully")
     print("[Camera] signaling thread to stop")
     camera.stop()
-    print("[Camera] waiting for teardown")
-    camera.join()
-    print("[Camera] thread killed sucessfully")
+    cv2.destroyAllWindows()
     print("All units stopped")

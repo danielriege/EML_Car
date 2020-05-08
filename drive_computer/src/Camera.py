@@ -3,34 +3,42 @@ import time
 import threading
 import cv2
 import sys
+from queue import Queue
 
-class Camera(threading.Thread):
-    def __init__(self, _loop = None, _teardown = None):
-        threading.Thread.__init__(self)
-        self.loop = _loop
-        self.teardown  = _teardown
-        self.running = True
-    def run(self):
-        cap = cv2.VideoCapture(0)
-        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-        cap.set(cv2.CAP_PROP_FPS, 30)
-        try:
-            i = 0
-            while cap.isOpened():
-                _, frame = cap.read()
-                if self.loop:
-                    self.loop(frame, i)
-                i += 1
-                cv2.waitKey(1)
-                if self.running == False:
-                    break
-        finally:
-            cap.release()
-            if self.teardown:
-                self.teardown()
+class Camera:
+    def __init__(self, queueSize=128):
+		self.stream = cv2.VideoCapture(0)
+        self.stream.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+        self.stream.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+        self.stream.set(cv2.CAP_PROP_FPS, 30)
+		self.stopped = False
+		# initialize the queue used to store frames read from
+		# the camera
+		self.Q = Queue(maxsize=queueSize)
+    def start(self):
+		# start a thread to read frames from the file video stream
+		t = Thread(target=self.update, args=())
+		t.daemon = True
+		t.start()
+		return self
     def stop(self):
-        self.running = False
+		self.stopped = True
+    def update(self):
+		while True:
+			if self.stopped:
+				return
+			# ensure the queue has room in it
+			if not self.Q.full():
+				# read the next frame from the file
+				grabbed, frame = self.stream.read()
+                if not grabbed:
+                    continue
+				self.Q.put(frame)
+    def read(self):
+		# return next frame in the queue
+		return self.Q.get()
+    def available(self):
+		return self.Q.qsize() > 0
 if __name__ == "__main__":
     def teardown():
         cv2.destroyAllWindows()
@@ -40,14 +48,23 @@ if __name__ == "__main__":
         cv2.imshow("Frame", image)
         print((time.time()-prevtime)*1000,"ms")
         prevtime = time.time()
-    test_camera = Camera(callback)
+
+
+    test_camera = Camera()
     print("Starting live preview...")
-    # runs a forever loop on main thread
-    # callback will be called in evert loop run
+    # buffers camera stream in a queue on seperate thread
     test_camera.start()
+    prevtime = 0
     try:
         while True:
-            continue
+            frame = test_camera.read()
+
+            cv2.imshow("Frame", frame)
+            # simulate neural net interferance
+            time.sleep(0.02)
+            # wait until buffer has more frames to process
+            while not test_camera.available():
+            print((time.time()-prevtime)*1000,"ms")
+            prevtime = time.time()
     except KeyboardInterrupt:
         test_camera.stop()
-        test_camera.join()
