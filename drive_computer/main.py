@@ -18,7 +18,8 @@ CHANNEL_2 = 1
 
 prevtime = time.time()
 test_run_name = "test1"
-
+if len(sys.argv) > 1:
+    test_run_name = sys.argv[1]
 
 # SETUP
 print("[Control] starting...")
