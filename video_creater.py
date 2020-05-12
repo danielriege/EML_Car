@@ -9,7 +9,7 @@ if len(sys.argv) > 1:
 
 img_array = []
 size = (0,0)
-for filename in sorted(glob.glob("./training_data/*.jpg")):
+for filename in sorted(glob.glob("./training_data/%s/*.jpg" % (test_run_name))):
     img = cv2.imread(filename)
     height, width, layers = img.shape
     size = (width, height)
