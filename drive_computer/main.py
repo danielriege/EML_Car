@@ -33,7 +33,7 @@ control.start()
 print("[Camera] starting...")
 camera = Camera(255)
 camera.start()
-lane_navigator = LaneNavigator("../CNN/lane_navigation.h5")
+lane_navigator = LaneNavigator("../CNN/lane_navigation.tflite", use_coral=True)
 
 # will be called when the receiver has a new value for a channel
 def controlCallback(ch, pwm):
@@ -63,8 +63,9 @@ try:
 
         #training_data_saver.add((frame, loopRun, channelData[CHANNEL_1],
         #                         channelData[CHANNEL_2]))
-
-        steering_angle = lane_navigator.predictSteeringAngle(frame)
+        start = time.time()
+        steering_angle = lane_navigator.predictSteeringAngle(frame)[0]
+        print('interferance took: ', (time.time()-start)*1000, 'ms')
         control.steer(steering_angle)
 
         cv2.putText(frame, "Frame Buffer: {}".format(camera.Q.qsize()),
