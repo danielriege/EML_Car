@@ -6,13 +6,10 @@ import argparse
 import time
 
 class LaneNavigator:
-        def __init__(self, model_path, use_coral=False):
+        def __init__(self, model_path):
             # Load TF lite model
-            if use_coral:
-                self.interpreter = Interpreter(model_path,
+            self.interpreter = Interpreter(model_path,
                                         experimental_delegates=[load_delegate('libedgetpu.so.1.0')])
-            else:
-                self.interpreter = Interpreter(model_path)
             self.interpreter.allocate_tensors()
             self.input_details = self.interpreter.get_input_details()
             self.output_details = self.interpreter.get_output_details()
@@ -22,8 +19,8 @@ class LaneNavigator:
             self.interpreter.set_tensor(self.input_details[0]['index'], input_data)
             self.interpreter.invoke()
             output_data = self.interpreter.get_tensor(self.output_details[0]['index'])
-            
-            return output_data[0]
+            output_data = (output_data-0.5)*(-1)            
+            return np.int((output_data[0]+1.5)*1000)
         def __preprocess(self,image):
             height, _, _ = image.shape
             qheight = int(height/4)
@@ -40,7 +37,7 @@ def main():
     parser.add_argument('--image', type=str, help='File name of an image in black_dot folder.', required=True)
     args = parser.parse_args()
     imageName = args.image
-    laneNavigator = LaneNavigator("../../CNN/lane_navigation.tflite")
+    laneNavigator = LaneNavigator("../../CNN/black_dot_edgetpu.tflite")
     test_image = cv2.imread("../../training_data/black_dot/%s" % (imageName))
     start = time.time()
     angle = laneNavigator.predictSteeringAngle(test_image)
