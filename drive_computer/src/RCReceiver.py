@@ -22,9 +22,16 @@ class RCReceiver(threading.Thread):
     def getChannelData(self):
         return self.channelData
     def stop(self):
+        print("[RCReceiver] stopping thread...")
         self.running = False
     def run(self):
-        self.serial.open()
+        print("[RCReceiver] Thread started. Opening serial port...")
+        try:
+            self.serial.open()
+            print("[RCReceiver] serial port opened. Listening started.")
+        except:
+            print("[RCReceiver] error opening serial port. Please check USB connection")
+            return
         while self.running:
             if(self.serial.in_waiting >1):
                 try:
@@ -36,9 +43,12 @@ class RCReceiver(threading.Thread):
                         if self.callback:
                             self.callback(ch, pwm)
                 except ValueError:
+                    print("[RCReceiver] warning: ValueError received")
                     continue
+        print("[RCReceiver] Thread stopped. Closing serial port...")
         self.serial.close()
-if __name__ == '__main__':
+        print("[RCReceiver] serial port closed.")
+def test():
     test_receiver = RCReceiver(port="/dev/ttyUSB0", baudrate=115200, validRange=range(800,2200))
     print("opening serial port and starting thread...")
     test_receiver.start()
@@ -52,3 +62,5 @@ if __name__ == '__main__':
         test_receiver.stop()
         print("waiting for thread to stop")
         test_receiver.join()
+if __name__ == '__main__':
+    test()

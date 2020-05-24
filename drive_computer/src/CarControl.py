@@ -25,9 +25,11 @@ class CarControl:
     def start(self):
         self.steering.start(self.__relativePWM(self.steering_value) + self.steering_trim)
         self.throttle.start(self.__relativePWM(self.throttle_value) + self.throttle_trim)
+        print("[CarControl] PWM cycles started.")
     def stop(self):
         self.steering.stop()
         self.throttle.stop()
+        print("[CarControl] PWM cycles stopped.")
     # angle as PWM %
     def steer(self, angle):
         self.steering_value = self.__relativePWM(angle)
