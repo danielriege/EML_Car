@@ -22,8 +22,10 @@ def main():
     # CONFIGURATION
     parser = argparse.ArgumentParser( formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--mode', type=str, help='Mode to run e.g. [t]raining or [a]utonomous ', required=True)
-    parser.add_argument('--name', type=str, help='in manual mode = name of training folder; in autonomous = model name', required=True)
-    parser.add_argument('--receiver', type=str, help='Serial port of RCReceiver Arduino unit e.g. /dev/ttyUSB0', required=False)
+    parser.add_argument('--name', type=str, help='in manual mode = name of training folder; in autonomous = model name',
+                        required=True)
+    parser.add_argument('--receiver', type=str, help='Serial port of RCReceiver Arduino unit e.g. /dev/ttyUSB0', required=False,
+                        default="/dev/ttyUSB0")
     args = parser.parse_args()
     if args.mode == "t":
         training = True
@@ -35,7 +37,7 @@ def main():
         print("Mode unkown")
         return
     run_name = args.name
-    serial_port = args.receiver or "/dev/ttyUSB0"
+    serial_port = args.receiver
     # SETUP
     control = CarControl(steering_zero = 1500,
     steering_trim = -1.9,
@@ -59,7 +61,7 @@ def main():
         training_data_saver = TrainingDataSaver(threads=7, bufferSize=128, name=run_name)
         training_data_saver.start()
     else:
-        lane_navigator = LaneNavigator("../CNN/%s_edgetpu.tflite", run_name)
+        lane_navigator = LaneNavigator("../CNN/%s_edgetpu.tflite" % run_name)
 
     # LOOP
     try:

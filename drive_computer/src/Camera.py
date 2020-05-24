@@ -64,7 +64,7 @@ def test():
                 continue
                 print((time.time()-prevtime)*1000,"ms")
                 prevtime = time.time()
-            except KeyboardInterrupt:
-                test_camera.stop()
+    except KeyboardInterrupt:
+        test_camera.stop()
 if __name__ == "__main__":
     test()
