@@ -19,7 +19,7 @@ class TrainingDataSaver:
         print("[TrainingDataSaver] new thread started.")
         while True:
             (frame, loopRun, ch1, ch2) = self.Q.get()
-            cv2.imwrite("../training_data/%s/%04d_%04d_%04d.jpg" % (self.name,loopRun,ch1, ch2),frame)
+            cv2.imwrite("../training_data/%s/%05d_%04d_%04d.jpg" % (self.name,loopRun,ch1, ch2),frame)
             if self.stopped == True:
                 print("[TrainingDataSaver] one thread stopped.")
                 break
