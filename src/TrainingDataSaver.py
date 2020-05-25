@@ -17,12 +17,10 @@ class TrainingDataSaver:
             self.threadList.append(t)
     def task(self):
         print("[TrainingDataSaver] new thread started.")
-        while True:
+        while not self.stopped:
             (frame, loopRun, ch1, ch2) = self.Q.get()
-            cv2.imwrite("../training_data/%s/%05d_%04d_%04d.jpg" % (self.name,loopRun,ch1, ch2),frame)
-            if self.stopped == True:
-                print("[TrainingDataSaver] one thread stopped.")
-                break
+            cv2.imwrite("./training_data/%s/%05d_%04d_%04d.jpg" % (self.name,loopRun,ch1, ch2),frame)
+        print("[TrainingDataSaver] one thread stopped.")
     def stop(self):
         print("[TrainingDataSaver] stopping all threads...")
         self.stopped = True

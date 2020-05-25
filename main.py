@@ -95,8 +95,8 @@ def main():
         receiver.stop()
         receiver.join()
         camera.stop()
-        #print("[TrainingDataSaver] stopping...")
-        #training_data_saver.stop()
+        if training:
+            training_data_saver.stop()
         cv2.destroyAllWindows()
 if __name__ == "__main__":
     main()
