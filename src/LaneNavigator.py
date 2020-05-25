@@ -39,7 +39,7 @@ def test():
     parser.add_argument('--image', type=str, help='Image path to test.', required=True)
     args = parser.parse_args()
     imagePath = args.image
-    laneNavigator = LaneNavigator("../../CNN/black_dot_edgetpu.tflite")
+    laneNavigator = LaneNavigator("../models/black_dot_edgetpu.tflite")
     test_image = cv2.imread(imagePath)
     start = time.time()
     angle = laneNavigator.predictSteeringAngle(test_image)

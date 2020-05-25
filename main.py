@@ -61,7 +61,7 @@ def main():
         training_data_saver = TrainingDataSaver(threads=7, bufferSize=128, name=run_name)
         training_data_saver.start()
     else:
-        lane_navigator = LaneNavigator("../CNN/%s_edgetpu.tflite" % run_name)
+        lane_navigator = LaneNavigator("./models/%s_edgetpu.tflite" % run_name)
 
     # LOOP
     try:
