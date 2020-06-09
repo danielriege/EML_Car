@@ -4,7 +4,7 @@ import time
 
 # throttle_zero might also be configured on the ESC
 class CarControl:
-    def __init__(self, steering_zero, throttle_zero, steering_pin, throttle_pin, steering_trim = 0, throttle_trim = 0, pwm_frequency = 50):
+    def __init__(self, steering_zero, throttle_zero, steering_pin, throttle_pin, steering_trim = 0, throttle_trim = 0, pwm_frequency = 50, cruiseControlThresholds = (1100, 1500), cruiseControlSpeed = 1500):
         self.steering_value = steering_zero
         self.throttle_value = throttle_zero
         self.steering_trim = steering_trim
@@ -12,6 +12,8 @@ class CarControl:
         self.pwm_frequency = pwm_frequency
         self.steering_pin = steering_pin
         self.throttle_pin = throttle_pin
+        self.cruiseControlThresholds = cruiseControlThresholds
+        self.cruiseControlSpeed = cruiseControlSpeed
 
         GPIO.setmode(GPIO.BCM)
         GPIO.setup(self.steering_pin, GPIO.OUT)
@@ -40,6 +42,13 @@ class CarControl:
         self.throttle_value = self.__relativePWM(throttle)
         if 5.0 <= self.throttle_value <= 10.0:
             self.throttle_value += self.throttle_trim
+            self.throttle.ChangeDutyCycle(self.throttle_value)
+    def cruiseControl(self, throttle):
+        if throttle < self.cruiseControlThresholds[0]:
+            self.throttle_value = 1250 + self.throttle_trim
+            self.throttle.ChangeDutyCycle(self.throttle_value)
+        elif throttle > self.cruiseControlThresholds[1]:
+            self.throttle_value = self.cruiseControlSpeed + self.throttle_trim
             self.throttle.ChangeDutyCycle(self.throttle_value)
     def __relativePWM(self, pwm_value):
         return pwm_value*self.pwm_frequency/10000.0

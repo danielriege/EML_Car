@@ -53,7 +53,10 @@ def main():
         if ch == CHANNEL_1 and training == True:
             control.steer(pwm)
         if ch == CHANNEL_2:
-            control.accelerate(pwm)
+            if training == True:
+                control.accelerate(pwm)
+            else:
+                control.cruiseControl(pwm)
     receiver = RCReceiver(port=serial_port, baudrate=115200, _callback=controlCallback)
     receiver.start()
     time.sleep(2)
