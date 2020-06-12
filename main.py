@@ -53,10 +53,10 @@ def main():
         if ch == CHANNEL_1 and training == True:
             control.steer(pwm)
         if ch == CHANNEL_2:
-            if training == True:
-                control.accelerate(pwm)
-            else:  
-                control.cruiseControl(pwm)
+#            if training == True:
+            control.accelerate(pwm)
+ #           else:  
+  #              control.cruiseControl(pwm)
     receiver = RCReceiver(port=serial_port, baudrate=115200, _callback=controlCallback)
     receiver.start()
     time.sleep(2)
@@ -69,28 +69,37 @@ def main():
     # LOOP
     try:
         prevtime = time.time()
+        period = 100
         loopRun = 0
         while True:
             frame = camera.read()
             if training:
                 channelData = receiver.getChannelData()
                 training_data_saver.add((frame, loopRun, channelData[CHANNEL_1], channelData[CHANNEL_2]))
-                print("[Receiver] ",channelData)
+#                print("[Receiver] ",channelData)
             else:
                 start = time.time()
                 steering_angle = lane_navigator.predictSteeringAngle(frame)
-                print('angle:',steering_angle,' interferance took: ', (time.time()-start)*1000, 'ms')
+#                print('angle:',steering_angle,' interferance took: ', (time.time()-start)*1000, 'ms')
                 control.steer(steering_angle)
-
+            # Frame 
             cv2.putText(frame, "Frame Buffer: {}".format(camera.Q.qsize()),
-    		(10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
-
+    		(10, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
+            
+            fps = int((1/period)*1000)
+            cv2.putText(frame, "FPS: %d" % fps, (10, 40),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,0,0),2)
+            if training:
+                steering_angle = channelData[CHANNEL_2]
+            cv2.putText(frame, "Steering: %d" % steering_angle, (10, 60),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,0,0),2)
             cv2.imshow("Frame", frame)
             cv2.waitKey(1)
             # wait until buffer has more frames to process
             while not camera.available():
                 continue
-            print("loop period: ",(time.time()-prevtime)*1000,"ms")
+            period = (time.time()-prevtime)*1000
+#            print("loop period: ",period,"ms")
             prevtime = time.time()
             loopRun += 1
     except KeyboardInterrupt:

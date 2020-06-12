@@ -6,7 +6,8 @@ import time
 class CarControl:
     def __init__(self, steering_zero, throttle_zero, steering_pin,
                  throttle_pin, steering_trim = 0, throttle_trim = 0,
-                 pwm_frequency = 50, cruiseControlThresholds = (1050, 1500), cruiseControlSpeed = 1500):
+                 pwm_frequency = 50, cruiseControlThresholds = (1050, 1500),
+                 cruiseControlSpeed = 1400):
         self.steering_value = steering_zero
         self.throttle_value = throttle_zero
         self.steering_trim = steering_trim
@@ -47,7 +48,7 @@ class CarControl:
             self.throttle.ChangeDutyCycle(self.throttle_value)
     def cruiseControl(self, throttle):
         if throttle < self.cruiseControlThresholds[0]:
-            self.throttle_value = self.__relativePWM(1250)
+            self.throttle_value = self.__relativePWM(1100)
             self.throttle_value += self.throttle_trim
             self.throttle.ChangeDutyCycle(self.throttle_value)
             print("[CarControler] cruise control deactivated")
